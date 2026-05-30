@@ -40,7 +40,7 @@ const io = new Server(server, {
 const users = {
   green: {
     username: "green",
-    password: "W@||!@₹",
+    password: "W@||!@",
     displayName: "Green",
     color: "lime"
   },
