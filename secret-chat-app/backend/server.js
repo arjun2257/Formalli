@@ -5,29 +5,52 @@ const { Server } = require("socket.io");
 
 const app = express();
 
+/**
+ * Allowed frontend URLs
+ * Local React: http://localhost:3000
+ * Online Vercel: https://formalli.vercel.app
+ */
 const allowedOrigins = [
   "http://localhost:3000",
-  "https://your-vercel-app-name.vercel.app"
+  "https://formalli.vercel.app"
 ];
 
+/**
+ * Express CORS configuration
+ */
 app.use(
   cors({
-    origin: allowedOrigins,
-    methods: ["GET", "POST"]
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    methods: ["GET", "POST", "OPTIONS"],
+    credentials: true
   })
 );
 
+app.options("*", cors());
 app.use(express.json());
 
 const server = http.createServer(app);
 
+/**
+ * Socket.IO CORS configuration
+ */
 const io = new Server(server, {
   cors: {
     origin: allowedOrigins,
-    methods: ["GET", "POST"]
+    methods: ["GET", "POST", "OPTIONS"],
+    credentials: true
   }
 });
 
+/**
+ * Two private users only
+ */
 const users = {
   green: {
     username: "green",
@@ -43,21 +66,33 @@ const users = {
   }
 };
 
+/**
+ * Health check route for Render
+ */
 app.get("/", (req, res) => {
   res.send("Secret Chat Backend is running");
 });
 
+/**
+ * Login API
+ */
 app.post("/login", (req, res) => {
   const { username, password } = req.body;
+
+  console.log("Login request:", username);
 
   const user = users[username];
 
   if (!user || user.password !== password) {
+    console.log("Login failed:", username);
+
     return res.status(401).json({
       message: "Invalid username or password"
     });
   }
- console.log("Login success:", username);
+
+  console.log("Login success:", username);
+
   return res.json({
     username: user.username,
     displayName: user.displayName,
@@ -65,6 +100,9 @@ app.post("/login", (req, res) => {
   });
 });
 
+/**
+ * Socket.IO real-time chat handling
+ */
 io.on("connection", (socket) => {
   console.log("User connected:", socket.id);
 
@@ -104,6 +142,10 @@ io.on("connection", (socket) => {
   });
 });
 
+/**
+ * Render uses process.env.PORT
+ * Local uses 5000
+ */
 const PORT = process.env.PORT || 5000;
 
 server.listen(PORT, () => {
