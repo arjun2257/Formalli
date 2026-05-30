@@ -1,12 +1,23 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import { io } from "socket.io-client";
 import "./App.css";
 
-const socket = io("http://localhost:5000");
+const BACKEND_URL =
+  process.env.REACT_APP_BACKEND_URL || "http://localhost:5000";
 
 function App() {
+  const socket = useMemo(() => {
+    return io(BACKEND_URL, {
+      transports: ["websocket", "polling"],
+      reconnection: true,
+      reconnectionAttempts: 10,
+      reconnectionDelay: 1000
+    });
+  }, []);
+
   const [user, setUser] = useState(null);
+
   const [login, setLogin] = useState({
     username: "",
     password: ""
@@ -15,8 +26,18 @@ function App() {
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState([]);
   const [notification, setNotification] = useState("");
+  const [isConnecting, setIsConnecting] = useState(false);
 
   useEffect(() => {
+    socket.on("connect", () => {
+      console.log("Socket connected:", socket.id);
+    });
+
+    socket.on("connect_error", (error) => {
+      console.error("Socket connection error:", error.message);
+      setNotification("Backend connection issue. Please wait and refresh.");
+    });
+
     socket.on("receive-message", (data) => {
       setMessages((prev) => [...prev, data]);
     });
@@ -42,35 +63,54 @@ function App() {
     });
 
     return () => {
+      socket.off("connect");
+      socket.off("connect_error");
       socket.off("receive-message");
       socket.off("online-notification");
       socket.off("system-message");
+      socket.disconnect();
     };
-  }, []);
+  }, [socket]);
 
   const handleLogin = async () => {
+    if (!login.username.trim() || !login.password.trim()) {
+      alert("Please enter username and password");
+      return;
+    }
+
     try {
-      const res = await axios.post("http://localhost:5000/login", login);
+      setIsConnecting(true);
+
+      const res = await axios.post(`${BACKEND_URL}/login`, login, {
+        headers: {
+          "Content-Type": "application/json"
+        }
+      });
+
       setUser(res.data);
       socket.emit("join-room", res.data);
     } catch (error) {
+      console.error("Login error:", error);
       alert("Invalid username or password");
+    } finally {
+      setIsConnecting(false);
     }
   };
 
   const sendMessage = () => {
-    if (!message.trim()) return;
+    if (!message.trim() || !user) return;
 
     socket.emit("send-message", {
       sender: user.displayName,
       color: user.color,
-      message
+      message: message.trim()
     });
 
     setMessage("");
   };
 
   const markOnline = () => {
+    if (!user) return;
     socket.emit("i-am-online", user);
   };
 
@@ -96,13 +136,17 @@ function App() {
             onChange={(e) =>
               setLogin({ ...login, password: e.target.value })
             }
+            onKeyDown={(e) => {
+              if (e.key === "Enter") handleLogin();
+            }}
           />
 
-          <button onClick={handleLogin}>Login</button>
+          <button onClick={handleLogin} disabled={isConnecting}>
+            {isConnecting ? "Connecting..." : "Login"}
+          </button>
 
           <p className="hint">
-            green / green123 <br />
-            blue / blue123
+            Backend: {BACKEND_URL}
           </p>
         </div>
       </div>
