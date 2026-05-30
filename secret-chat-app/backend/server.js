@@ -35,7 +35,7 @@ const users = {
     displayName: "Green",
     color: "lime"
   },
-  blue: {
+  malli: {
     username: "malli",
     password: "Majunu",
     displayName: "Blue",
