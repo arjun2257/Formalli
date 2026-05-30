@@ -22,8 +22,10 @@ function App() {
   const incomingOfferRef = useRef(null);
   const pendingIceCandidatesRef = useRef([]);
 
-  const [user, setUser] = useState(null);
+  const userRef = useRef(null);
+  const isInCallRef = useRef(false);
 
+  const [user, setUser] = useState(null);
   const [login, setLogin] = useState({
     username: "",
     password: ""
@@ -37,6 +39,11 @@ function App() {
   const [callStatus, setCallStatus] = useState("Idle");
   const [incomingCall, setIncomingCall] = useState(null);
   const [isInCall, setIsInCall] = useState(false);
+
+  const updateInCall = (value) => {
+    isInCallRef.current = value;
+    setIsInCall(value);
+  };
 
   const flushPendingIceCandidates = async () => {
     const pc = peerConnectionRef.current;
@@ -53,106 +60,6 @@ function App() {
     }
 
     pendingIceCandidatesRef.current = [];
-  };
-
-  const createPeerConnection = () => {
-    const peerConnection = new RTCPeerConnection({
-      iceServers: [
-        {
-          urls: "stun:stun.l.google.com:19302"
-        },
-        {
-          urls: "stun:stun1.l.google.com:19302"
-        },
-        {
-          urls: "stun:stun2.l.google.com:19302"
-        }
-      ]
-    });
-
-    peerConnection.onicecandidate = (event) => {
-      if (event.candidate) {
-        socket.emit("ice-candidate", {
-          candidate: event.candidate
-        });
-      }
-    };
-
-    peerConnection.ontrack = async (event) => {
-      console.log("Remote track received:", event.streams);
-
-      if (remoteAudioRef.current && event.streams[0]) {
-        remoteAudioRef.current.srcObject = event.streams[0];
-
-        try {
-          await remoteAudioRef.current.play();
-          console.log("Remote audio playing");
-        } catch (error) {
-          console.error("Remote audio play blocked:", error);
-          setNotification("Tap the audio control or screen to allow sound");
-        }
-      }
-    };
-
-    peerConnection.oniceconnectionstatechange = () => {
-      console.log("ICE state:", peerConnection.iceConnectionState);
-
-      if (peerConnection.iceConnectionState === "checking") {
-        setCallStatus("Connecting audio...");
-      }
-
-      if (
-        peerConnection.iceConnectionState === "connected" ||
-        peerConnection.iceConnectionState === "completed"
-      ) {
-        setCallStatus("Talking...");
-        setIsInCall(true);
-      }
-
-      if (
-        peerConnection.iceConnectionState === "failed" ||
-        peerConnection.iceConnectionState === "disconnected"
-      ) {
-        setCallStatus("Audio connection failed");
-      }
-    };
-
-    peerConnection.onconnectionstatechange = () => {
-      console.log("Connection state:", peerConnection.connectionState);
-
-      if (peerConnection.connectionState === "connecting") {
-        setCallStatus("Connecting...");
-      }
-
-      if (peerConnection.connectionState === "connected") {
-        setCallStatus("Talking...");
-        setIsInCall(true);
-      }
-
-      if (
-        peerConnection.connectionState === "failed" ||
-        peerConnection.connectionState === "closed"
-      ) {
-        cleanupCall();
-      }
-    };
-
-    peerConnectionRef.current = peerConnection;
-    return peerConnection;
-  };
-
-  const getLocalAudioStream = async () => {
-    const stream = await navigator.mediaDevices.getUserMedia({
-      audio: {
-        echoCancellation: true,
-        noiseSuppression: true,
-        autoGainControl: true
-      },
-      video: false
-    });
-
-    localStreamRef.current = stream;
-    return stream;
   };
 
   const cleanupCall = () => {
@@ -177,8 +84,95 @@ function App() {
     incomingOfferRef.current = null;
     pendingIceCandidatesRef.current = [];
     setIncomingCall(null);
-    setIsInCall(false);
+    updateInCall(false);
     setCallStatus("Idle");
+  };
+
+  const createPeerConnection = () => {
+    const peerConnection = new RTCPeerConnection({
+      iceServers: [
+        { urls: "stun:stun.l.google.com:19302" },
+        { urls: "stun:stun1.l.google.com:19302" },
+        { urls: "stun:stun2.l.google.com:19302" }
+      ]
+    });
+
+    peerConnection.onicecandidate = (event) => {
+      if (event.candidate) {
+        socket.emit("ice-candidate", {
+          candidate: event.candidate
+        });
+      }
+    };
+
+    peerConnection.ontrack = async (event) => {
+      console.log("Remote audio track received");
+
+      if (remoteAudioRef.current && event.streams[0]) {
+        remoteAudioRef.current.srcObject = event.streams[0];
+
+        try {
+          await remoteAudioRef.current.play();
+          console.log("Remote audio playing");
+        } catch (error) {
+          console.error("Audio play blocked:", error);
+          setNotification("Tap audio player to start sound");
+        }
+      }
+    };
+
+    peerConnection.oniceconnectionstatechange = () => {
+      const state = peerConnection.iceConnectionState;
+      console.log("ICE state:", state);
+
+      if (state === "checking") {
+        setCallStatus("Connecting audio...");
+      }
+
+      if (state === "connected" || state === "completed") {
+        setCallStatus("Talking...");
+        updateInCall(true);
+      }
+
+      if (state === "failed" || state === "disconnected") {
+        setCallStatus("Audio connection failed");
+      }
+    };
+
+    peerConnection.onconnectionstatechange = () => {
+      const state = peerConnection.connectionState;
+      console.log("Connection state:", state);
+
+      if (state === "connecting") {
+        setCallStatus("Connecting...");
+      }
+
+      if (state === "connected") {
+        setCallStatus("Talking...");
+        updateInCall(true);
+      }
+
+      if (state === "failed" || state === "closed") {
+        cleanupCall();
+      }
+    };
+
+    peerConnectionRef.current = peerConnection;
+    return peerConnection;
+  };
+
+  const getLocalAudioStream = async () => {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      audio: {
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true
+      },
+      video: false
+    });
+
+    localStreamRef.current = stream;
+    return stream;
   };
 
   useEffect(() => {
@@ -188,7 +182,7 @@ function App() {
 
     socket.on("connect_error", (error) => {
       console.error("Socket connection error:", error.message);
-      setNotification("Backend connection issue. Please wait and refresh.");
+      setNotification("Backend connection issue. Please refresh.");
     });
 
     socket.on("receive-message", (data) => {
@@ -216,9 +210,11 @@ function App() {
     });
 
     socket.on("incoming-call", (data) => {
-      if (isInCall) {
+      console.log("Incoming call received:", data.from);
+
+      if (isInCallRef.current) {
         socket.emit("reject-call", {
-          from: user?.displayName || "Unknown"
+          from: userRef.current?.displayName || "Unknown"
         });
         return;
       }
@@ -230,6 +226,8 @@ function App() {
 
     socket.on("call-accepted", async (data) => {
       try {
+        console.log("Call accepted");
+
         if (!peerConnectionRef.current) return;
 
         await peerConnectionRef.current.setRemoteDescription(
@@ -239,7 +237,7 @@ function App() {
         await flushPendingIceCandidates();
 
         setCallStatus("Talking...");
-        setIsInCall(true);
+        updateInCall(true);
       } catch (error) {
         console.error("Call accepted error:", error);
         cleanupCall();
@@ -257,12 +255,7 @@ function App() {
 
         const pc = peerConnectionRef.current;
 
-        if (!pc) {
-          pendingIceCandidatesRef.current.push(data.candidate);
-          return;
-        }
-
-        if (!pc.remoteDescription || !pc.remoteDescription.type) {
+        if (!pc || !pc.remoteDescription || !pc.remoteDescription.type) {
           pendingIceCandidatesRef.current.push(data.candidate);
           return;
         }
@@ -290,10 +283,8 @@ function App() {
       socket.off("call-rejected");
       socket.off("ice-candidate");
       socket.off("call-ended");
-      socket.disconnect();
-      cleanupCall();
     };
-  }, [socket, isInCall, user]);
+  }, [socket]);
 
   const handleLogin = async () => {
     if (!login.username.trim() || !login.password.trim()) {
@@ -311,6 +302,8 @@ function App() {
       });
 
       setUser(res.data);
+      userRef.current = res.data;
+
       socket.emit("join-room", res.data);
     } catch (error) {
       console.error("Login error:", error);
@@ -334,7 +327,6 @@ function App() {
 
   const markOnline = () => {
     if (!user) return;
-
     socket.emit("i-am-online", user);
   };
 
@@ -398,7 +390,7 @@ function App() {
 
       setIncomingCall(null);
       setCallStatus("Talking...");
-      setIsInCall(true);
+      updateInCall(true);
     } catch (error) {
       console.error("Accept call error:", error);
       alert("Unable to accept call. Please allow microphone permission.");
@@ -479,11 +471,11 @@ function App() {
 
           <button onClick={markOnline}>I am online</button>
 
-          {!isInCall && !incomingCall && callStatus === "Idle" && (
+          {callStatus === "Idle" && !incomingCall && (
             <button onClick={startCall}>Call</button>
           )}
 
-          {(isInCall || callStatus !== "Idle") && !incomingCall && (
+          {callStatus !== "Idle" && !incomingCall && (
             <button onClick={endCall}>End Call</button>
           )}
         </div>
