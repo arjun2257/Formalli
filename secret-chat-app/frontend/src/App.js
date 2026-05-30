@@ -20,6 +20,7 @@ function App() {
   const localStreamRef = useRef(null);
   const remoteAudioRef = useRef(null);
   const incomingOfferRef = useRef(null);
+  const pendingIceCandidatesRef = useRef([]);
 
   const [user, setUser] = useState(null);
 
@@ -37,6 +38,23 @@ function App() {
   const [incomingCall, setIncomingCall] = useState(null);
   const [isInCall, setIsInCall] = useState(false);
 
+  const flushPendingIceCandidates = async () => {
+    const pc = peerConnectionRef.current;
+
+    if (!pc || !pc.remoteDescription || !pc.remoteDescription.type) return;
+
+    for (const candidate of pendingIceCandidatesRef.current) {
+      try {
+        await pc.addIceCandidate(new RTCIceCandidate(candidate));
+        console.log("Pending ICE candidate added");
+      } catch (error) {
+        console.error("Pending ICE candidate failed:", error);
+      }
+    }
+
+    pendingIceCandidatesRef.current = [];
+  };
+
   const createPeerConnection = () => {
     const peerConnection = new RTCPeerConnection({
       iceServers: [
@@ -45,6 +63,9 @@ function App() {
         },
         {
           urls: "stun:stun1.l.google.com:19302"
+        },
+        {
+          urls: "stun:stun2.l.google.com:19302"
         }
       ]
     });
@@ -57,21 +78,61 @@ function App() {
       }
     };
 
-    peerConnection.ontrack = (event) => {
-      if (remoteAudioRef.current) {
+    peerConnection.ontrack = async (event) => {
+      console.log("Remote track received:", event.streams);
+
+      if (remoteAudioRef.current && event.streams[0]) {
         remoteAudioRef.current.srcObject = event.streams[0];
+
+        try {
+          await remoteAudioRef.current.play();
+          console.log("Remote audio playing");
+        } catch (error) {
+          console.error("Remote audio play blocked:", error);
+          setNotification("Tap the audio control or screen to allow sound");
+        }
       }
     };
 
-    peerConnection.onconnectionstatechange = () => {
-      const state = peerConnection.connectionState;
+    peerConnection.oniceconnectionstatechange = () => {
+      console.log("ICE state:", peerConnection.iceConnectionState);
 
-      if (state === "connected") {
+      if (peerConnection.iceConnectionState === "checking") {
+        setCallStatus("Connecting audio...");
+      }
+
+      if (
+        peerConnection.iceConnectionState === "connected" ||
+        peerConnection.iceConnectionState === "completed"
+      ) {
         setCallStatus("Talking...");
         setIsInCall(true);
       }
 
-      if (state === "disconnected" || state === "failed" || state === "closed") {
+      if (
+        peerConnection.iceConnectionState === "failed" ||
+        peerConnection.iceConnectionState === "disconnected"
+      ) {
+        setCallStatus("Audio connection failed");
+      }
+    };
+
+    peerConnection.onconnectionstatechange = () => {
+      console.log("Connection state:", peerConnection.connectionState);
+
+      if (peerConnection.connectionState === "connecting") {
+        setCallStatus("Connecting...");
+      }
+
+      if (peerConnection.connectionState === "connected") {
+        setCallStatus("Talking...");
+        setIsInCall(true);
+      }
+
+      if (
+        peerConnection.connectionState === "failed" ||
+        peerConnection.connectionState === "closed"
+      ) {
         cleanupCall();
       }
     };
@@ -82,7 +143,11 @@ function App() {
 
   const getLocalAudioStream = async () => {
     const stream = await navigator.mediaDevices.getUserMedia({
-      audio: true,
+      audio: {
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true
+      },
       video: false
     });
 
@@ -92,6 +157,10 @@ function App() {
 
   const cleanupCall = () => {
     if (peerConnectionRef.current) {
+      peerConnectionRef.current.onicecandidate = null;
+      peerConnectionRef.current.ontrack = null;
+      peerConnectionRef.current.oniceconnectionstatechange = null;
+      peerConnectionRef.current.onconnectionstatechange = null;
       peerConnectionRef.current.close();
       peerConnectionRef.current = null;
     }
@@ -106,6 +175,7 @@ function App() {
     }
 
     incomingOfferRef.current = null;
+    pendingIceCandidatesRef.current = [];
     setIncomingCall(null);
     setIsInCall(false);
     setCallStatus("Idle");
@@ -145,21 +215,35 @@ function App() {
       ]);
     });
 
-    socket.on("incoming-call", async (data) => {
+    socket.on("incoming-call", (data) => {
+      if (isInCall) {
+        socket.emit("reject-call", {
+          from: user?.displayName || "Unknown"
+        });
+        return;
+      }
+
       incomingOfferRef.current = data.offer;
       setIncomingCall(data.from);
       setCallStatus(`Ringing from ${data.from}...`);
     });
 
     socket.on("call-accepted", async (data) => {
-      if (!peerConnectionRef.current) return;
+      try {
+        if (!peerConnectionRef.current) return;
 
-      await peerConnectionRef.current.setRemoteDescription(
-        new RTCSessionDescription(data.answer)
-      );
+        await peerConnectionRef.current.setRemoteDescription(
+          new RTCSessionDescription(data.answer)
+        );
 
-      setCallStatus("Talking...");
-      setIsInCall(true);
+        await flushPendingIceCandidates();
+
+        setCallStatus("Talking...");
+        setIsInCall(true);
+      } catch (error) {
+        console.error("Call accepted error:", error);
+        cleanupCall();
+      }
     });
 
     socket.on("call-rejected", () => {
@@ -169,11 +253,22 @@ function App() {
 
     socket.on("ice-candidate", async (data) => {
       try {
-        if (peerConnectionRef.current && data.candidate) {
-          await peerConnectionRef.current.addIceCandidate(
-            new RTCIceCandidate(data.candidate)
-          );
+        if (!data.candidate) return;
+
+        const pc = peerConnectionRef.current;
+
+        if (!pc) {
+          pendingIceCandidatesRef.current.push(data.candidate);
+          return;
         }
+
+        if (!pc.remoteDescription || !pc.remoteDescription.type) {
+          pendingIceCandidatesRef.current.push(data.candidate);
+          return;
+        }
+
+        await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
+        console.log("ICE candidate added");
       } catch (error) {
         console.error("ICE candidate error:", error);
       }
@@ -198,7 +293,7 @@ function App() {
       socket.disconnect();
       cleanupCall();
     };
-  }, [socket]);
+  }, [socket, isInCall, user]);
 
   const handleLogin = async () => {
     if (!login.username.trim() || !login.password.trim()) {
@@ -247,6 +342,7 @@ function App() {
     try {
       if (!user) return;
 
+      cleanupCall();
       setCallStatus("Calling...");
 
       const peerConnection = createPeerConnection();
@@ -256,7 +352,11 @@ function App() {
         peerConnection.addTrack(track, stream);
       });
 
-      const offer = await peerConnection.createOffer();
+      const offer = await peerConnection.createOffer({
+        offerToReceiveAudio: true,
+        offerToReceiveVideo: false
+      });
+
       await peerConnection.setLocalDescription(offer);
 
       socket.emit("call-user", {
@@ -287,6 +387,8 @@ function App() {
         new RTCSessionDescription(incomingOfferRef.current)
       );
 
+      await flushPendingIceCandidates();
+
       const answer = await peerConnection.createAnswer();
       await peerConnection.setLocalDescription(answer);
 
@@ -306,7 +408,7 @@ function App() {
 
   const rejectCall = () => {
     socket.emit("reject-call", {
-      from: user.displayName
+      from: user?.displayName
     });
 
     cleanupCall();
@@ -314,7 +416,7 @@ function App() {
 
   const endCall = () => {
     socket.emit("end-call", {
-      from: user.displayName
+      from: user?.displayName
     });
 
     cleanupCall();
@@ -359,7 +461,13 @@ function App() {
 
   return (
     <div className="chat-page">
-      <audio ref={remoteAudioRef} autoPlay playsInline />
+      <audio
+        ref={remoteAudioRef}
+        autoPlay
+        playsInline
+        controls
+        className="remote-audio"
+      />
 
       <div className="chat-header">
         <h2>ForMalli</h2>
@@ -371,11 +479,11 @@ function App() {
 
           <button onClick={markOnline}>I am online</button>
 
-          {!isInCall && !incomingCall && (
+          {!isInCall && !incomingCall && callStatus === "Idle" && (
             <button onClick={startCall}>Call</button>
           )}
 
-          {isInCall && (
+          {(isInCall || callStatus !== "Idle") && !incomingCall && (
             <button onClick={endCall}>End Call</button>
           )}
         </div>
@@ -383,9 +491,7 @@ function App() {
 
       {notification && <div className="notification">{notification}</div>}
 
-      <div className="call-status">
-        Call Status: {callStatus}
-      </div>
+      <div className="call-status">Call Status: {callStatus}</div>
 
       {incomingCall && (
         <div className="incoming-call">
@@ -405,9 +511,7 @@ function App() {
 
             <span className="time"> [{msg.time}] </span>
 
-            <span style={{ color: msg.color }}>
-              : {msg.message}
-            </span>
+            <span style={{ color: msg.color }}>: {msg.message}</span>
           </div>
         ))}
       </div>
