@@ -57,7 +57,7 @@ app.post("/login", (req, res) => {
       message: "Invalid username or password"
     });
   }
-
+ console.log("Login success:", username);
   return res.json({
     username: user.username,
     displayName: user.displayName,
