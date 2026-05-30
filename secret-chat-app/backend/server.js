@@ -59,13 +59,18 @@ app.get("/", (req, res) => {
 app.post("/login", (req, res) => {
   const { username, password } = req.body;
 
+  console.log("Login request:", username);
+
   const user = users[username];
 
   if (!user || user.password !== password) {
+    console.log("Login failed:", username);
     return res.status(401).json({
       message: "Invalid username or password"
     });
   }
+
+  console.log("Login success:", username);
 
   return res.json({
     username: user.username,
@@ -102,7 +107,6 @@ io.on("connection", (socket) => {
     });
   });
 
-  // WebRTC call signaling events
   socket.on("call-user", (data) => {
     socket.to("secret-room").emit("incoming-call", {
       from: data.from,
