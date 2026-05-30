@@ -40,7 +40,6 @@ body {
 
 .login-box input:focus {
   border-color: lime;
-  box-shadow: 0 0 8px rgba(0, 255, 0, 0.3);
 }
 
 .login-box button {
@@ -54,15 +53,6 @@ body {
   font-family: Consolas, monospace;
 }
 
-.login-box button:hover {
-  background: lime;
-}
-
-.login-box button:disabled {
-  background: #145214;
-  cursor: not-allowed;
-}
-
 .hint {
   color: #777;
   font-size: 12px;
@@ -70,27 +60,31 @@ body {
   word-break: break-all;
 }
 
+/* Main chat page */
 .chat-page {
   height: 100vh;
   background: #000;
   color: white;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
+/* Header */
 .chat-header {
-  padding: 15px 18px;
+  padding: 12px 16px;
   border-bottom: 1px solid #333;
   background: #080808;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-shrink: 0;
 }
 
 .chat-header h2 {
   color: white;
   margin: 0;
-  font-size: 28px;
+  font-size: 26px;
 }
 
 .header-actions {
@@ -109,7 +103,7 @@ body {
   background: #222;
   color: white;
   border: 1px solid #555;
-  padding: 10px 15px;
+  padding: 10px 14px;
   cursor: pointer;
   font-family: Consolas, monospace;
 }
@@ -117,30 +111,33 @@ body {
 .chat-header button:hover,
 .header-actions button:hover {
   background: #333;
-  border-color: #888;
 }
 
+/* Notification */
 .notification {
-  padding: 12px;
+  padding: 10px;
   background: #111;
   color: yellow;
   border-bottom: 1px solid #333;
   text-align: center;
   font-weight: bold;
+  flex-shrink: 0;
 }
 
+/* Call status */
 .call-status {
-  padding: 10px;
+  padding: 9px 16px;
   background: #050505;
   color: #00ff66;
   border-bottom: 1px solid #222;
   font-family: Consolas, monospace;
-  text-align: left;
   font-weight: bold;
+  flex-shrink: 0;
 }
 
+/* Incoming call */
 .incoming-call {
-  padding: 14px;
+  padding: 12px;
   background: #111;
   color: yellow;
   border-bottom: 1px solid #333;
@@ -151,6 +148,7 @@ body {
   font-family: Consolas, monospace;
   font-weight: bold;
   flex-wrap: wrap;
+  flex-shrink: 0;
 }
 
 .incoming-call button {
@@ -162,99 +160,117 @@ body {
   font-family: Consolas, monospace;
 }
 
-.incoming-call button:hover {
-  background: #333;
-}
-
+/* Chat terminal */
 .terminal {
   flex: 1;
-  padding: 15px 18px;
+  padding: 14px 16px;
   overflow-y: auto;
   background: #000;
   border-bottom: 1px solid #222;
+  min-height: 0;
 }
 
 .chat-line {
   margin-bottom: 10px;
-  font-size: 17px;
-  line-height: 1.4;
+  font-size: 16px;
+  line-height: 1.45;
+  word-break: break-word;
 }
 
 .time {
   color: #777;
 }
 
+/* Input area */
 .input-area {
   display: flex;
-  padding: 12px;
+  align-items: center;
+  padding: 10px 12px;
   border-top: 1px solid #333;
   background: #080808;
+  flex-shrink: 0;
 }
 
 .prompt {
   margin-right: 8px;
   font-weight: bold;
+  white-space: nowrap;
 }
 
 .input-area input {
   flex: 1;
   background: #000;
   color: white;
-  border: none;
+  border: 1px solid #333;
   outline: none;
   font-family: Consolas, monospace;
   font-size: 15px;
+  padding: 9px;
+  min-width: 0;
 }
 
 .input-area button {
   background: #222;
   color: white;
   border: 1px solid #555;
-  padding: 8px 15px;
+  padding: 9px 14px;
   cursor: pointer;
   font-family: Consolas, monospace;
+  margin-left: 8px;
 }
 
-.input-area button:hover {
-  background: #333;
-}
-
+/* Audio player */
 .remote-audio {
   position: fixed;
-  bottom: 70px;
-  right: 20px;
+  bottom: 58px;
+  right: 16px;
   width: 260px;
   z-index: 999;
 }
 
 /* Mobile responsive */
 @media (max-width: 600px) {
+  .chat-page {
+    height: 100dvh;
+  }
+
   .chat-header {
     flex-direction: column;
     align-items: flex-start;
-    gap: 10px;
+    gap: 8px;
+    padding: 10px 14px;
   }
 
   .chat-header h2 {
-    font-size: 24px;
+    font-size: 22px;
+    width: 100%;
   }
 
   .header-actions {
     width: 100%;
-    justify-content: flex-start;
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    align-items: center;
     gap: 8px;
   }
 
+  .header-actions span {
+    grid-column: 1 / -1;
+    font-size: 14px;
+  }
+
   .header-actions button {
-    padding: 8px 12px;
+    padding: 8px 10px;
+    font-size: 13px;
   }
 
   .call-status {
     font-size: 14px;
+    padding: 8px 14px;
   }
 
   .terminal {
-    padding: 12px;
+    padding: 12px 14px;
   }
 
   .chat-line {
@@ -262,22 +278,45 @@ body {
   }
 
   .input-area {
+    padding: 8px;
     gap: 6px;
+  }
+
+  .prompt {
+    font-size: 13px;
   }
 
   .input-area input {
     font-size: 14px;
+    padding: 8px;
   }
 
-  .remote-audio {
-    top: 10px;
-    left: 10px;
-    right: 10px;
-    bottom: auto;
-    width: calc(100% - 20px);
+  .input-area button {
+    padding: 8px 10px;
+    margin-left: 4px;
+    font-size: 13px;
   }
 
   .incoming-call {
     flex-direction: column;
+    gap: 8px;
+    padding: 10px;
+    font-size: 14px;
+  }
+
+  /*
+    Important mobile fix:
+    Audio player should not cover app title/header.
+    Keep it near bottom above input.
+  */
+  .remote-audio {
+    position: fixed;
+    left: 8px;
+    right: 8px;
+    bottom: 62px;
+    top: auto;
+    width: calc(100% - 16px);
+    height: 34px;
+    z-index: 999;
   }
 }
