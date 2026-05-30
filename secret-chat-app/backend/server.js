@@ -4,14 +4,26 @@ const cors = require("cors");
 const { Server } = require("socket.io");
 
 const app = express();
-app.use(cors());
+
+const allowedOrigins = [
+  "http://localhost:3000",
+  "https://your-vercel-app-name.vercel.app"
+];
+
+app.use(
+  cors({
+    origin: allowedOrigins,
+    methods: ["GET", "POST"]
+  })
+);
+
 app.use(express.json());
 
 const server = http.createServer(app);
 
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:3000",
+    origin: allowedOrigins,
     methods: ["GET", "POST"]
   }
 });
@@ -30,6 +42,10 @@ const users = {
     color: "deepskyblue"
   }
 };
+
+app.get("/", (req, res) => {
+  res.send("Secret Chat Backend is running");
+});
 
 app.post("/login", (req, res) => {
   const { username, password } = req.body;
@@ -55,6 +71,10 @@ io.on("connection", (socket) => {
   socket.on("join-room", (user) => {
     socket.join("secret-room");
     socket.user = user;
+
+    socket.to("secret-room").emit("system-message", {
+      message: `${user.displayName} joined the chat`
+    });
   });
 
   socket.on("i-am-online", (user) => {
@@ -75,9 +95,17 @@ io.on("connection", (socket) => {
 
   socket.on("disconnect", () => {
     console.log("User disconnected:", socket.id);
+
+    if (socket.user) {
+      socket.to("secret-room").emit("system-message", {
+        message: `${socket.user.displayName} went offline`
+      });
+    }
   });
 });
 
-server.listen(5000, () => {
-  console.log("Backend running on http://localhost:5000");
+const PORT = process.env.PORT || 5000;
+
+server.listen(PORT, () => {
+  console.log(`Backend running on port ${PORT}`);
 });
