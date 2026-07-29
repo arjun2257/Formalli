@@ -1,0 +1,12 @@
+{
+  "name": "formalli-static-frontend",
+  "version": "2.0.0",
+  "private": true,
+  "engines": {
+    "node": ">=20 <23"
+  },
+  "scripts": {
+    "start": "node local-server.js",
+    "build": "node build-config.js"
+  }
+}

@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#050505">
+  <meta name="description" content="Private ForMalli chat">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" href="/favicon.svg">
+  <link rel="stylesheet" href="/styles.css">
+  <title>ForMalli</title>
+</head>
+<body>
+  <main id="loginPage" class="login-page">
+    <section class="login-card">
+      <div class="brand-mark">FM</div>
+      <h1>ForMalli</h1>
+      <p class="login-subtitle">Private two-person chat</p>
+
+      <div id="loginMessage" class="notice hidden" role="alert"></div>
+      <div id="configError" class="configuration-error hidden"></div>
+
+      <label>Username
+        <input id="username" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="green or malli">
+      </label>
+      <label>Password
+        <input id="password" type="password" autocomplete="current-password" placeholder="Password">
+      </label>
+      <button id="loginButton" class="primary-button">Login</button>
+
+      <div class="backend-summary">
+        <span id="backendStatus">Backend: checking</span>
+        <small id="backendUrl"></small>
+      </div>
+    </section>
+  </main>
+
+  <main id="chatPage" class="chat-page hidden">
+    <header class="chat-header">
+      <div class="identity-row">
+        <div>
+          <h1>ForMalli</h1>
+          <span id="identity" class="identity"></span>
+        </div>
+        <button id="logoutButton" class="logout-button">Logout</button>
+      </div>
+
+      <div class="action-row">
+        <button id="notificationButton">Enable Notifications</button>
+        <button id="notificationTestButton" class="hidden">Test</button>
+        <button id="onlineButton">I am online</button>
+        <button id="videoButton">Request Video</button>
+      </div>
+    </header>
+
+    <section class="status-strip">
+      <span id="chatStatus" class="warning">Chat: Disconnected</span>
+      <span id="partnerStatus" class="muted">Partner: Offline</span>
+      <span id="videoStatus">Video: Idle</span>
+    </section>
+
+    <div id="toast" class="notice app-notice hidden" role="status"></div>
+
+    <section id="incomingVideoPanel" class="video-panel hidden">
+      <strong id="incomingVideoText"></strong>
+      <div>
+        <button id="admitButton" class="admit-button">Admit</button>
+        <button id="rejectButton">Reject</button>
+      </div>
+    </section>
+
+    <section id="approvedVideoPanel" class="video-panel approved hidden">
+      <strong>Google Meet is admitted.</strong>
+      <div>
+        <button id="joinMeetButton" class="admit-button">Join Meet</button>
+        <button id="closeMeetButton">Close</button>
+      </div>
+    </section>
+
+    <section id="terminal" class="terminal" aria-live="polite">
+      <div id="emptyChat" class="empty-chat">No messages yet. Start your private chat.</div>
+      <div id="messages"></div>
+      <div id="terminalEnd"></div>
+    </section>
+
+    <footer class="input-area">
+      <span id="prompt" class="prompt"></span>
+      <input id="messageInput" maxlength="2000" enterkeyhint="send" placeholder="Type message...">
+      <button id="sendButton" class="send-button" disabled>Send</button>
+    </footer>
+  </main>
+
+  <script src="/config.js"></script>
+  <script src="/vendor/socket.io.min.js"></script>
+  <script src="/app.js"></script>
+</body>
+</html>

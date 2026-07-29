@@ -1,0 +1,91 @@
+:root {
+  color-scheme: dark;
+  font-family: Consolas, "Courier New", monospace;
+  --green: #00e84d;
+  --yellow: #ffe24a;
+  --app-height: 100dvh;
+}
+* { box-sizing: border-box; }
+html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: #000; }
+body { overscroll-behavior: none; }
+button, input { font: inherit; border-radius: 0; }
+button {
+  min-height: 42px; padding: 9px 12px; border: 1px solid #515151;
+  background: #191919; color: #fff; cursor: pointer; touch-action: manipulation;
+}
+button:active:not(:disabled) { transform: translateY(1px); background: #282828; }
+button:disabled { opacity: .48; cursor: not-allowed; }
+.hidden { display: none !important; }
+.login-page {
+  height: var(--app-height); min-height: 100svh; display: grid; place-items: center;
+  padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
+  background: radial-gradient(circle at 50% 30%, rgba(0,232,77,.09), transparent 36%), #000;
+  overflow-y: auto;
+}
+.login-card {
+  width: min(100%, 390px); padding: 26px; border: 1px solid #244c31;
+  background: #101010; box-shadow: 0 0 26px rgba(0,232,77,.12);
+}
+.brand-mark { width: 48px; height: 48px; margin: 0 auto 12px; display: grid; place-items: center; background: var(--green); color: #000; font-weight: 900; }
+.login-card h1 { margin: 0; text-align: center; color: var(--green); font-size: 28px; }
+.login-subtitle { margin: 6px 0 22px; color: #777; text-align: center; font-size: 13px; }
+.login-card label { display: grid; gap: 7px; margin-bottom: 14px; color: #b8b8b8; font-size: 13px; }
+.login-card input, .input-area input {
+  width: 100%; min-width: 0; min-height: 46px; padding: 11px 12px;
+  border: 1px solid #454545; background: #000; color: #fff; outline: none; font-size: 16px;
+}
+.login-card input:focus, .input-area input:focus { border-color: var(--green); }
+.primary-button { width: 100%; border-color: var(--green); background: var(--green); color: #000; font-weight: 900; }
+.backend-summary { display: grid; gap: 6px; margin-top: 18px; color: #8a8a8a; text-align: center; font-size: 12px; }
+.backend-summary small { overflow-wrap: anywhere; }
+.notice, .configuration-error {
+  padding: 10px 12px; border: 1px solid #6d5d00; background: #211c00;
+  color: var(--yellow); line-height: 1.4; font-size: 13px;
+}
+.login-card .notice, .configuration-error { margin: 0 0 16px; }
+.chat-page { width: 100%; height: var(--app-height); min-height: 100svh; display: flex; flex-direction: column; background: #000; color: #fff; overflow: hidden; }
+.chat-header { flex: 0 0 auto; padding: max(10px, env(safe-area-inset-top)) 14px 10px; border-bottom: 1px solid #303030; background: #080808; }
+.identity-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.identity-row > div { display: flex; align-items: baseline; gap: 12px; min-width: 0; }
+.identity-row h1 { margin: 0; font-size: 24px; line-height: 1; }
+.identity { font-weight: 900; font-size: 13px; }
+.logout-button { min-height: 36px; padding: 6px 10px; color: #aaa; }
+.action-row { display: flex; gap: 8px; margin-top: 10px; overflow-x: auto; overscroll-behavior-inline: contain; scrollbar-width: none; padding-bottom: 2px; }
+.action-row::-webkit-scrollbar { display: none; }
+.action-row button { flex: 0 0 auto; white-space: nowrap; }
+.active-button, .admit-button { border-color: var(--green); color: #7dff9f; }
+.status-strip { flex: 0 0 auto; display: flex; gap: 12px; align-items: center; overflow-x: auto; white-space: nowrap; padding: 7px 12px; border-bottom: 1px solid #222; background: #050505; font-size: 12px; }
+.ok { color: var(--green); } .warning { color: var(--yellow); } .muted { color: #777; }
+.app-notice { flex: 0 0 auto; border-left: 0; border-right: 0; text-align: center; }
+.video-panel { flex: 0 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px; border-bottom: 1px solid #444; background: #111; color: var(--yellow); font-size: 13px; }
+.video-panel.approved { background: #06150b; color: #9dffb8; }
+.video-panel > div { display: flex; gap: 8px; flex: 0 0 auto; }
+.video-panel button { min-height: 36px; padding: 7px 10px; }
+.terminal { flex: 1 1 auto; min-height: 0; overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; padding: 14px 14px 22px; background: #000; }
+.empty-chat { min-height: 100%; display: grid; place-items: center; color: #555; text-align: center; padding: 28px; }
+.chat-message { margin: 0 0 14px; padding: 10px 11px; border-left: 2px solid #252525; background: #070707; }
+.message-meta { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 6px; }
+.message-meta time { color: #666; font-size: 11px; }
+.message-text { color: #ededed; line-height: 1.45; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 15px; }
+.input-area { flex: 0 0 auto; display: flex; align-items: center; gap: 8px; padding: 8px 10px calc(8px + env(safe-area-inset-bottom)); border-top: 1px solid #383838; background: #090909; box-shadow: 0 -8px 18px rgba(0,0,0,.8); }
+.prompt { flex: 0 0 auto; font-weight: 900; font-size: 13px; }
+.send-button { flex: 0 0 auto; min-width: 68px; border-color: #666; font-weight: 800; }
+@media (min-width: 760px) {
+  .chat-header { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+  .action-row { margin-top: 0; justify-content: flex-end; }
+  .terminal { padding: 18px 24px 28px; }
+  .input-area { padding-left: 16px; padding-right: 16px; }
+}
+@media (max-width: 480px) {
+  .chat-header { padding-left: 10px; padding-right: 10px; }
+  .identity-row h1 { font-size: 21px; }
+  .action-row button { min-height: 38px; padding: 7px 9px; font-size: 12px; }
+  .video-panel { align-items: stretch; flex-direction: column; }
+  .video-panel > div button { flex: 1; }
+  .terminal { padding: 10px 9px 18px; }
+  .chat-message { margin-bottom: 10px; padding: 9px; }
+  .message-text { font-size: 14px; }
+  .prompt { display: none; }
+  .input-area { padding-left: 7px; padding-right: 7px; }
+  .send-button { min-width: 62px; padding-left: 8px; padding-right: 8px; }
+}

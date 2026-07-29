@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: formalli-backend
+    runtime: node
+    plan: free
+    rootDir: backend
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /healthz
+    autoDeployTrigger: commit
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: GREEN_PASSWORD
+        sync: false
+      - key: MALLI_PASSWORD
+        sync: false
+      - key: ALLOWED_ORIGINS
+        sync: false
+      - key: GOOGLE_MEET_URL
+        value: https://meet.google.com/crj-cusk-uds
+      - key: ALLOW_VERCEL_PREVIEWS
+        value: "false"
