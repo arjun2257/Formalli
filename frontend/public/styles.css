@@ -89,3 +89,43 @@ button:disabled { opacity: .48; cursor: not-allowed; }
   .input-area { padding-left: 7px; padding-right: 7px; }
   .send-button { min-width: 62px; padding-left: 8px; padding-right: 8px; }
 }
+
+.login-brand {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  margin-bottom: 26px;
+}
+
+.brand-logo {
+  display: block;
+  width: 90px;
+  height: 90px;
+  margin: 0 auto 14px;
+  object-fit: cover;
+  object-position: center;
+  border-radius: 50%;
+}
+
+.login-brand h1 {
+  margin: 0;
+  text-align: center;
+}
+
+.login-subtitle {
+  margin: 8px 0 0;
+  text-align: center;
+}
+@media (max-width: 480px) {
+  .brand-logo {
+    width: 76px;
+    height: 76px;
+  }
+
+  .login-brand {
+    margin-bottom: 22px;
+  }
+}
